@@ -32,6 +32,19 @@ const SECTION_ICONS = {
   related: '<path d="M9 12h6"/><path d="M9.5 7H7a5 5 0 0 0 0 10h2.5M14.5 7H17a5 5 0 0 1 0 10h-2.5"/>'
 };
 
+const KANA_ROWS = [
+  ["あ", "あいうえお"],
+  ["か", "かきくけこがぎぐげご"],
+  ["さ", "さしすせそざじずぜぞ"],
+  ["た", "たちつてとだぢづでど"],
+  ["な", "なにぬねの"],
+  ["は", "はひふへほばびぶべぼぱぴぷぺぽ"],
+  ["ま", "まみむめも"],
+  ["や", "やゆよ"],
+  ["ら", "らりるれろ"],
+  ["わ", "わをん"]
+];
+
 /* ---------- 状態 ---------- */
 
 let siteData = null;
@@ -231,16 +244,21 @@ function renderSearchPage() {
 
   let query = params.get("q") || "";
   let activeCat = params.get("cat") || "";
+  let activeKana = params.get("kana") || "";
 
   if (input) input.value = query;
 
   const update = () => {
-    syncUrl(query, activeCat);
+    syncUrl(query, activeCat, activeKana);
     renderCategoryFilters(activeCat, (catId) => {
       activeCat = catId;
       update();
     });
-    renderResults(query, activeCat);
+    renderKanaFilters(activeKana, (kana) => {
+      activeKana = kana;
+      update();
+    });
+    renderResults(query, activeCat, activeKana);
   };
 
   if (form && input) {
@@ -258,10 +276,11 @@ function renderSearchPage() {
   update();
 }
 
-function syncUrl(query, catId) {
+function syncUrl(query, catId, kana) {
   const next = new URLSearchParams();
   if (query) next.set("q", query);
   if (catId) next.set("cat", catId);
+  if (kana) next.set("kana", kana);
   const search = next.toString();
   history.replaceState(null, "", search ? `?${search}` : location.pathname);
 }
@@ -289,18 +308,59 @@ function renderCategoryFilters(activeCat, onSelect) {
   });
 }
 
-function renderResults(query, catId) {
+function renderKanaFilters(activeKana, onSelect) {
+  const container = $("#kanaFilters");
+  if (!container) return;
+
+  const counts = {};
+  allTerms.forEach((term) => {
+    const row = kanaRowOf(term.reading);
+    if (row) counts[row] = (counts[row] || 0) + 1;
+  });
+
+  container.innerHTML = "";
+
+  const allChip = document.createElement("button");
+  allChip.className = "filter-chip kana-chip kana-chip-all";
+  allChip.type = "button";
+  allChip.textContent = "すべて";
+  allChip.setAttribute("aria-pressed", String(activeKana === ""));
+  allChip.addEventListener("click", () => onSelect(""));
+  container.appendChild(allChip);
+
+  KANA_ROWS.forEach(([row]) => {
+    const chip = document.createElement("button");
+    chip.className = "filter-chip kana-chip";
+    chip.type = "button";
+    chip.textContent = row;
+    chip.setAttribute("aria-label", `${row}行で絞り込み`);
+    chip.setAttribute("aria-pressed", String(row === activeKana));
+    if (!counts[row]) chip.disabled = true;
+    chip.addEventListener("click", () => onSelect(row === activeKana ? "" : row));
+    container.appendChild(chip);
+  });
+}
+
+function renderResults(query, catId, kana = "") {
   const results = $("#results");
   if (!results) return;
 
   const category = siteData.categories.find((item) => item.id === catId);
   let terms = catId ? allTerms.filter((term) => term.categoryId === catId) : allTerms;
+  if (kana) {
+    terms = terms
+      .filter((term) => kanaRowOf(term.reading) === kana)
+      .sort((a, b) => String(a.reading).localeCompare(String(b.reading), "ja"));
+  }
   if (query) terms = searchTerms(query, terms);
 
-  let title = "用語一覧";
-  if (query && category) title = `${category.name}で「${query}」を検索`;
-  else if (query) title = `「${query}」の検索結果`;
-  else if (category) title = category.name;
+  const labels = [];
+  if (category) labels.push(category.name);
+  if (kana) labels.push(`${kana}行`);
+  let title;
+  if (query) title = `${labels.length ? `${labels.join("・")}の` : ""}「${query}」検索結果`;
+  else if (labels.length) title = `${labels.join("・")}の用語`;
+  else title = "用語一覧";
 
   $("#resultsTitle").textContent = title;
   $("#resultsSub").textContent = query
@@ -453,6 +513,21 @@ function hideStatus() {
 
 function normalize(value) {
   return String(value || "").toLocaleLowerCase("ja-JP").trim();
+}
+
+function toHiragana(value) {
+  return String(value || "").replace(/[ァ-ヶ]/g, (char) =>
+    String.fromCharCode(char.charCodeAt(0) - 0x60)
+  );
+}
+
+const SMALL_KANA = { ぁ: "あ", ぃ: "い", ぅ: "う", ぇ: "え", ぉ: "お", ゃ: "や", ゅ: "ゆ", ょ: "よ", っ: "つ" };
+
+function kanaRowOf(reading) {
+  let first = toHiragana(String(reading || "").trim().charAt(0));
+  first = SMALL_KANA[first] || first;
+  const row = KANA_ROWS.find(([, chars]) => chars.includes(first));
+  return row ? row[0] : "";
 }
 
 function escapeHtml(value) {

@@ -59,8 +59,15 @@
 
     <section class="section section-list" aria-labelledby="resultsTitle">
       <div class="container">
-        <div class="filter-bar" role="group" aria-label="カテゴリで絞り込み">
-          <div id="categoryFilters" class="filter-scroll"></div>
+        <div class="filter-area">
+          <div class="filter-bar">
+            <span class="filter-label" id="catFilterLabel">カテゴリ</span>
+            <div id="categoryFilters" class="filter-scroll" role="group" aria-labelledby="catFilterLabel"></div>
+          </div>
+          <div class="filter-bar">
+            <span class="filter-label" id="kanaFilterLabel">五十音</span>
+            <div id="kanaFilters" class="filter-scroll" role="group" aria-labelledby="kanaFilterLabel"></div>
+          </div>
         </div>
 
         <div class="results-heading">

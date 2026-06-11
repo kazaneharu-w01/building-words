@@ -697,7 +697,35 @@ mark {
 
 .section-list { padding-top: 28px; }
 
-.filter-bar { margin-bottom: 26px; }
+.filter-area { margin-bottom: 26px; display: grid; gap: 8px; }
+
+.filter-bar { display: flex; align-items: center; gap: 12px; }
+
+.filter-label {
+  flex-shrink: 0;
+  width: 4.5em;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.kana-chip {
+  min-width: 42px;
+  padding-inline: 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+.kana-chip-all { min-width: 0; padding-inline: 16px; }
+
+.filter-scroll .kana-chip[aria-pressed="true"]::before { content: ""; }
+
+.kana-chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 
 .filter-scroll {
   display: flex;
