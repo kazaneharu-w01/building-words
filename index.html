@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>現場作業者のための建築用語辞典</title>
+  <meta name="description" content="現場で聞く建築用語を施工別・目的別にすばやく検索できる、現場作業者のための用語辞典です。">
+  <meta name="theme-color" content="#0e1b2c">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e1b2c'/%3E%3Cpath d='M7 22h18M9 22v-7l7-5 7 5v7' stroke='%23ffc53d' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="home">
+  <a class="skip-link" href="#main">本文へスキップ</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="現場作業者のための建築用語辞典 ホーム">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18M5 19v-7l7-5 7 5v7"/><path d="M12 19v-4"/></svg>
+        </span>
+        <span class="brand-text"><small>現場作業者のための</small><strong>建築用語辞典</strong></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="globalNav">
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="visually-hidden">メニュー</span>
+      </button>
+      <nav id="globalNav" class="nav" aria-label="メインナビゲーション">
+        <a href="index.html" aria-current="page">ホーム</a>
+        <a href="search.html">用語一覧</a>
+        <a href="index.html#categories">施工別カテゴリ</a>
+        <a href="search.html?cat=safety">安全用語</a>
+        <a href="index.html#features">使い方</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="hero-eyebrow"><span class="hero-eyebrow-dot" aria-hidden="true"></span>新人作業者から職長まで</p>
+          <h1 id="hero-title">現場で聞く建築用語が、<br><em>すぐわかる。</em></h1>
+          <p class="hero-lead">施工別・目的別に、現場で使う言葉をすばやく検索。学術的な説明より、現場で通じる言葉で解説します。</p>
+
+          <form id="searchForm" class="search-form" role="search">
+            <label class="visually-hidden" for="searchInput">建築用語を検索</label>
+            <div class="search-box">
+              <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input id="searchInput" type="search" placeholder="例：養生、墨出し、サン、荷揚げ" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="searchSuggest" aria-autocomplete="list">
+              <button type="submit">検索</button>
+            </div>
+            <ul id="searchSuggest" class="search-suggest" role="listbox" aria-label="検索候補" hidden></ul>
+          </form>
+
+          <div class="popular">
+            <span class="popular-label" id="popular-title">人気検索ワード</span>
+            <div id="popularKeywords" class="tag-list" role="list" aria-labelledby="popular-title"></div>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-card hero-card-back">
+            <span class="hero-card-badge">荷揚げ・搬入・揚重</span>
+            <strong>荷揚げ</strong>
+            <span class="hero-card-reading">にあげ</span>
+          </div>
+          <div class="hero-card hero-card-front">
+            <span class="hero-card-badge">現場共通用語</span>
+            <strong>養生</strong>
+            <span class="hero-card-reading">ようじょう</span>
+            <p>仕上げ面や周囲を傷・汚れから保護すること。</p>
+            <span class="hero-card-tags"><i>養生テープ</i><i>プラベニ</i></span>
+          </div>
+          <div class="hero-stat">
+            <strong id="heroTermCount">390</strong>
+            <span>収録用語<br>14カテゴリ</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="categories" class="section" aria-labelledby="category-title">
+      <div class="container">
+        <div class="section-heading">
+          <p class="section-kicker">Category</p>
+          <h2 id="category-title">施工業務ごとに探す</h2>
+          <p>職種や作業内容から、必要な用語にまっすぐたどり着けます。</p>
+        </div>
+        <div id="statusMessage" class="status-message" role="status" aria-live="polite" hidden></div>
+        <div id="categoryGrid" class="category-grid"></div>
+      </div>
+    </section>
+
+    <section class="section section-muted" aria-labelledby="pickup-title">
+      <div class="container">
+        <div class="section-heading section-heading-row">
+          <div>
+            <p class="section-kicker">Pickup</p>
+            <h2 id="pickup-title">よく使う用語</h2>
+            <p>現場で聞く頻度の高い言葉をピックアップ。</p>
+          </div>
+          <a class="text-link" href="search.html">用語一覧を見る<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+          </div>
+        <div id="pickupTerms" class="term-grid"></div>
+      </div>
+    </section>
+
+    <section id="features" class="section" aria-labelledby="features-title">
+      <div class="container">
+        <div class="section-heading">
+          <p class="section-kicker">Guide</p>
+          <h2 id="features-title">このサイトでできること</h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+            <h3>現場用語をすぐ検索</h3>
+            <p>用語名、読み方、意味、場面、関連用語から部分一致で探せます。</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span>
+            <h3>施工別に整理</h3>
+            <p>共通、安全、搬入、図面、内装、設備など14カテゴリから確認できます。</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V8M12 8c0-2.5 2-4.5 4.5-4.5H21V16h-4.5C14 16 12 18 12 21M12 8c0-2.5-2-4.5-4.5-4.5H3V16h4.5C10 16 12 18 12 21"/></svg></span>
+            <h3>新人向けにやさしく解説</h3>
+            <p>学術的な説明より、現場で理解しやすい言葉を優先しています。</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <h3>図面・安全・搬入用語も充実</h3>
+            <p>朝礼、搬入、墨出し、検査、職長指示で聞く言葉を横断的に学べます。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18M5 19v-7l7-5 7 5v7"/><path d="M12 19v-4"/></svg>
+        </span>
+        <strong>建築用語辞典</strong>
+      </div>
+      <nav class="footer-nav" aria-label="フッターナビゲーション">
+        <a href="index.html">ホーム</a>
+        <a href="search.html">用語一覧</a>
+        <a href="search.html?cat=safety">安全用語</a>
+      </nav>
+      <p class="footer-copy">© 2026 現場作業者のための建築用語辞典</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

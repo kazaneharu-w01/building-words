@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用語一覧 | 現場作業者のための建築用語辞典</title>
+  <meta name="description" content="建築用語をキーワード検索・施工カテゴリで絞り込みできます。">
+  <meta name="theme-color" content="#0e1b2c">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e1b2c'/%3E%3Cpath d='M7 22h18M9 22v-7l7-5 7 5v7' stroke='%23ffc53d' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="search">
+  <a class="skip-link" href="#main">本文へスキップ</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="現場作業者のための建築用語辞典 ホーム">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18M5 19v-7l7-5 7 5v7"/><path d="M12 19v-4"/></svg>
+        </span>
+        <span class="brand-text"><small>現場作業者のための</small><strong>建築用語辞典</strong></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="globalNav">
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="visually-hidden">メニュー</span>
+      </button>
+      <nav id="globalNav" class="nav" aria-label="メインナビゲーション">
+        <a href="index.html">ホーム</a>
+        <a href="search.html" aria-current="page">用語一覧</a>
+        <a href="index.html#categories">施工別カテゴリ</a>
+        <a href="search.html?cat=safety">安全用語</a>
+        <a href="index.html#features">使い方</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-hero">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="パンくずリスト">
+          <a href="index.html">ホーム</a><span aria-hidden="true">/</span><span aria-current="page">用語一覧</span>
+        </nav>
+        <h1 id="pageTitle">用語を探す</h1>
+        <p class="page-lead" id="pageLead">キーワード入力やカテゴリ選択で、すぐに絞り込めます。</p>
+
+        <form id="searchForm" class="search-form" role="search">
+          <label class="visually-hidden" for="searchInput">建築用語を検索</label>
+          <div class="search-box">
+            <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="searchInput" type="search" placeholder="例：養生、墨出し、サン、荷揚げ" autocomplete="off">
+            <button type="submit">検索</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="section section-list" aria-labelledby="resultsTitle">
+      <div class="container">
+        <div class="filter-bar" role="group" aria-label="カテゴリで絞り込み">
+          <div id="categoryFilters" class="filter-scroll"></div>
+        </div>
+
+        <div class="results-heading">
+          <h2 id="resultsTitle">用語一覧</h2>
+          <p id="resultsSub" aria-live="polite"></p>
+        </div>
+
+        <div id="statusMessage" class="status-message" role="status" aria-live="polite" hidden></div>
+        <div id="results" class="term-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h18M5 19v-7l7-5 7 5v7"/><path d="M12 19v-4"/></svg>
+        </span>
+        <strong>建築用語辞典</strong>
+      </div>
+      <nav class="footer-nav" aria-label="フッターナビゲーション">
+        <a href="index.html">ホーム</a>
+        <a href="search.html">用語一覧</a>
+        <a href="search.html?cat=safety">安全用語</a>
+      </nav>
+      <p class="footer-copy">© 2026 現場作業者のための建築用語辞典</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
