@@ -95,9 +95,6 @@ function bindNavToggle() {
 /* ---------- トップページ ---------- */
 
 function renderHome() {
-  const count = $("#heroTermCount");
-  if (count) count.textContent = String(allTerms.length);
-
   renderPopularKeywords();
   renderCategoryGrid();
   renderPickupTerms();
