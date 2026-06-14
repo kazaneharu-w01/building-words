@@ -6,6 +6,10 @@ const PICKUP_TERMS = ["養生", "墨出し", "サン", "荷揚げ"];
 const DEFAULT_POPULAR = ["養生", "墨出し", "サン", "荷揚げ", "足場", "アンカー", "開口", "逃げ", "納まり", "取り合い"];
 const SITE_NAME = "現場作業者のための建築用語辞典";
 
+const RECENT_KEY = "bw_recent_terms"; // 端末内に保存する閲覧履歴
+const RECENT_MAX = 12;                // 保存する最大件数
+const RECENT_SHOW = 8;                // トップに表示する最大件数
+
 const CATEGORY_ICONS = {
   common: '<path d="M4 15a8 8 0 0 1 16 0"/><path d="M2.5 15h19"/><path d="M12 7V4.5"/>',
   "temporary-scaffold": '<path d="M5 3v18M19 3v18M5 7h14M5 17h14"/><path d="m5 17 14-10"/>',
@@ -115,7 +119,7 @@ function bindNavToggle() {
 function renderHome() {
   renderPopularKeywords();
   renderCategoryGrid();
-  renderPickupTerms();
+  renderRecentOrPickup();
   bindHomeSearch();
 }
 
@@ -157,15 +161,71 @@ function renderCategoryGrid() {
   `).join("");
 }
 
-function renderPickupTerms() {
+// 閲覧履歴（localStorage）
+function getRecentEntries() {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushRecentTerm(name, categoryId) {
+  try {
+    const list = getRecentEntries().filter((e) => !(e.t === name && e.c === categoryId));
+    list.unshift({ t: name, c: categoryId });
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX)));
+  } catch {
+    /* プライベートモード等で localStorage が使えない場合は無視 */
+  }
+}
+
+function clearRecentTerms() {
+  try {
+    localStorage.removeItem(RECENT_KEY);
+  } catch {
+    /* noop */
+  }
+}
+
+// 履歴があれば「最近表示した用語」、なければ「よく使う用語」を表示
+function renderRecentOrPickup() {
   const container = $("#pickupTerms");
   if (!container) return;
 
-  const terms = PICKUP_TERMS
-    .map((name) => allTerms.find((term) => term.term === name))
-    .filter(Boolean);
+  const recent = getRecentEntries()
+    .map((e) => allTerms.find((term) => term.term === e.t && term.categoryId === e.c))
+    .filter(Boolean)
+    .slice(0, RECENT_SHOW);
 
-  container.innerHTML = terms.map((term) => termCardTemplate(term)).join("");
+  const kicker = $("#pickupKicker");
+  const title = $("#pickup-title");
+  const sub = $("#pickupSub");
+  const clearBtn = $("#clearRecent");
+
+  if (recent.length) {
+    if (kicker) kicker.textContent = "History";
+    if (title) title.textContent = "最近表示した用語";
+    if (sub) sub.textContent = "この端末で最近ひらいた用語をすぐ呼び出せます。";
+    container.innerHTML = recent.map((term) => termCardTemplate(term)).join("");
+    if (clearBtn) {
+      clearBtn.hidden = false;
+      clearBtn.onclick = () => {
+        clearRecentTerms();
+        renderRecentOrPickup();
+      };
+    }
+  } else {
+    if (kicker) kicker.textContent = "Pickup";
+    if (title) title.textContent = "よく使う用語";
+    if (sub) sub.textContent = "現場で聞く頻度の高い言葉をピックアップ。";
+    const terms = PICKUP_TERMS
+      .map((name) => allTerms.find((term) => term.term === name))
+      .filter(Boolean);
+    container.innerHTML = terms.map((term) => termCardTemplate(term)).join("");
+    if (clearBtn) clearBtn.hidden = true;
+  }
 }
 
 /* ---------- 検索サジェスト（トップ） ---------- */
@@ -410,6 +470,8 @@ function renderTermPage() {
     showStatus("用語が見つかりませんでした。");
     return;
   }
+
+  pushRecentTerm(term.term, term.categoryId);
 
   document.title = `${term.term}（${term.reading || "読み方未登録"}） | ${SITE_NAME}`;
   const crumb = $("#breadcrumbTerm");

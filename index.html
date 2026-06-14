@@ -81,12 +81,15 @@
       <div class="container">
         <div class="section-heading section-heading-row">
           <div>
-            <p class="section-kicker">Pickup</p>
+            <p class="section-kicker" id="pickupKicker">Pickup</p>
             <h2 id="pickup-title">よく使う用語</h2>
-            <p>現場で聞く頻度の高い言葉をピックアップ。</p>
+            <p id="pickupSub">現場で聞く頻度の高い言葉をピックアップ。</p>
           </div>
-          <a class="text-link" href="search.html">用語一覧を見る<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+          <div class="pickup-actions">
+            <button id="clearRecent" class="link-button" type="button" hidden>表示履歴を消す</button>
+            <a class="text-link" href="search.html">用語一覧を見る<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
           </div>
+        </div>
         <div id="pickupTerms" class="term-grid"></div>
       </div>
     </section>
