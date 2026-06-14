@@ -25,6 +25,24 @@ const CATEGORY_ICONS = {
 
 const FALLBACK_ICON = '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 3"/>';
 
+// カテゴリID → アイコン画像ファイル名(image/ 配下)
+const CATEGORY_IMAGES = {
+  common: "現場共通.png",
+  "temporary-scaffold": "仮設・足場工事.png",
+  "earth-foundation": "土工事・基礎工事.png",
+  "rebar-form-concrete": "鉄筋・型枠・コンクリート工事.png",
+  "steel-wood": "鉄骨・木工事.png",
+  "interior-lgs-board": "内装・軽天・ボード工事.png",
+  finish: "クロス・床・左官・タイル・塗装.png",
+  "waterproof-roof-exterior": "防水・シーリング・屋根・外装.png",
+  "openings-glass": "建具・ガラス工事.png",
+  "electric-mep-hvac": "電気・設備・空調工事.png",
+  demolition: "解体工事.png",
+  "lifting-carrying": "荷揚げ・搬入・揚重.png",
+  "drawings-dimensions": "図面・寸法.png",
+  safety: "安全衛生.png"
+};
+
 const SECTION_ICONS = {
   meaning: '<path d="M12 21V8M12 8c0-2.5 2-4.5 4.5-4.5H21V16h-4.5C14 16 12 18 12 21M12 8c0-2.5-2-4.5-4.5-4.5H3V16h4.5C10 16 12 18 12 21"/>',
   scene: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
@@ -129,7 +147,7 @@ function renderCategoryGrid() {
 
   container.innerHTML = siteData.categories.map((category) => `
     <a class="category-card" href="search.html?cat=${encodeURIComponent(category.id)}">
-      <span class="category-icon" aria-hidden="true">${categoryIconSvg(category.id)}</span>
+      <span class="category-icon" aria-hidden="true">${categoryIconMarkup(category.id)}</span>
       <span>
         <h3>${escapeHtml(category.name)}</h3>
         <span class="category-count">${category.terms.length}語</span>
@@ -461,6 +479,13 @@ function termUrl(term) {
 function categoryIconSvg(categoryId) {
   const paths = CATEGORY_ICONS[categoryId] || FALLBACK_ICON;
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+}
+
+// アイコン画像があれば <img>、なければ線画SVGにフォールバック
+function categoryIconMarkup(categoryId) {
+  const file = CATEGORY_IMAGES[categoryId];
+  if (!file) return categoryIconSvg(categoryId);
+  return `<img class="category-img" src="image/${encodeURIComponent(file)}" alt="" loading="lazy" decoding="async">`;
 }
 
 function sectionIconSvg(key) {
