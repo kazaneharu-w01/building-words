@@ -415,6 +415,18 @@ button { font-family: inherit; }
 
 .pickup-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 
+.recent-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 28px 20px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
 .link-button {
   border: 0;
   background: none;

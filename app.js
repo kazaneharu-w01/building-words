@@ -2,7 +2,6 @@
 
 /* ---------- 定数 ---------- */
 
-const PICKUP_TERMS = ["養生", "墨出し", "サン", "荷揚げ"];
 const DEFAULT_POPULAR = ["養生", "墨出し", "サン", "荷揚げ", "足場", "アンカー", "開口", "逃げ", "納まり", "取り合い"];
 const SITE_NAME = "現場作業者のための建築用語辞典";
 
@@ -119,7 +118,7 @@ function bindNavToggle() {
 function renderHome() {
   renderPopularKeywords();
   renderCategoryGrid();
-  renderRecentOrPickup();
+  renderRecentTerms();
   bindHomeSearch();
 }
 
@@ -189,8 +188,8 @@ function clearRecentTerms() {
   }
 }
 
-// 履歴があれば「最近表示した用語」、なければ「よく使う用語」を表示
-function renderRecentOrPickup() {
+// 「最近表示した用語」を表示（履歴が無ければ空状態のメッセージ）
+function renderRecentTerms() {
   const container = $("#pickupTerms");
   if (!container) return;
 
@@ -199,31 +198,19 @@ function renderRecentOrPickup() {
     .filter(Boolean)
     .slice(0, RECENT_SHOW);
 
-  const kicker = $("#pickupKicker");
-  const title = $("#pickup-title");
-  const sub = $("#pickupSub");
   const clearBtn = $("#clearRecent");
 
   if (recent.length) {
-    if (kicker) kicker.textContent = "History";
-    if (title) title.textContent = "最近表示した用語";
-    if (sub) sub.textContent = "この端末で最近ひらいた用語をすぐ呼び出せます。";
     container.innerHTML = recent.map((term) => termCardTemplate(term)).join("");
     if (clearBtn) {
       clearBtn.hidden = false;
       clearBtn.onclick = () => {
         clearRecentTerms();
-        renderRecentOrPickup();
+        renderRecentTerms();
       };
     }
   } else {
-    if (kicker) kicker.textContent = "Pickup";
-    if (title) title.textContent = "よく使う用語";
-    if (sub) sub.textContent = "現場で聞く頻度の高い言葉をピックアップ。";
-    const terms = PICKUP_TERMS
-      .map((name) => allTerms.find((term) => term.term === name))
-      .filter(Boolean);
-    container.innerHTML = terms.map((term) => termCardTemplate(term)).join("");
+    container.innerHTML = `<p class="recent-empty">用語ページをひらくと、最近見た用語がここに並びます。</p>`;
     if (clearBtn) clearBtn.hidden = true;
   }
 }
