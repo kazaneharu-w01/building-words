@@ -4292,7 +4292,7 @@
     },
     {
       "id": "drawings-dimensions",
-      "name": "図面・寸法用語",
+      "name": "図面・寸法",
       "description": "図面、寸法、基準線、高さ記号に関する用語。",
       "terms": [
         {
