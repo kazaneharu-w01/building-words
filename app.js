@@ -74,6 +74,71 @@ let allTerms = [];
 const $ = (selector) => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
 
+/* ---------- Supabase (REST) ---------- */
+
+const SUPABASE_URL = "https://twfpmluoxjginzonjfxk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Kd4N4-_odb8iYx5TH-j4mw_Iq9Rnt2B";
+
+function sbHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    ...extra
+  };
+}
+
+// 検索回数を加算（人気検索ワード用）
+async function bumpSearch(keyword) {
+  const kw = String(keyword || "").trim();
+  if (!kw) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/rpc/bump_search`, {
+      method: "POST",
+      headers: sbHeaders(),
+      body: JSON.stringify({ kw }),
+      keepalive: true
+    });
+  } catch {
+    /* 計測の失敗は無視 */
+  }
+}
+
+// 検索回数の上位キーワードを取得
+async function fetchTopKeywords(limit = 10) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/search_counts?select=keyword&order=count.desc&limit=${limit}`,
+      { headers: sbHeaders() }
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return rows.map((r) => r.keyword).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+// 承認済みの投稿を取得
+async function fetchApprovedPosts(limit = 100) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/submissions?select=type,term,body,created_at&status=eq.approved&order=created_at.desc&limit=${limit}`,
+    { headers: sbHeaders() }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// 投稿を送信（status は pending 固定 = サーバー側の既定値）
+async function submitPost({ type, term, body }) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
+    method: "POST",
+    headers: sbHeaders({ Prefer: "return=minimal" }),
+    body: JSON.stringify({ type, term: term || null, body })
+  });
+  return res.ok;
+}
+
 /* ---------- 初期化 ---------- */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -100,6 +165,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (page === "home") renderHome();
   if (page === "search") renderSearchPage();
   if (page === "term") renderTermPage();
+  if (page === "board") renderBoard();
 });
 
 function bindNavToggle() {
@@ -122,13 +188,21 @@ function renderHome() {
   bindHomeSearch();
 }
 
-function renderPopularKeywords() {
+async function renderPopularKeywords() {
   const container = $("#popularKeywords");
   if (!container) return;
 
-  const keywords = siteData.site?.popular_keywords?.length
+  const fallback = siteData.site?.popular_keywords?.length
     ? siteData.site.popular_keywords
     : DEFAULT_POPULAR;
+
+  // 実際の検索回数の上位を優先しつつ、件数が少ないうちは固定リストで補う
+  const top = await fetchTopKeywords(10);
+  const keywords = [...top];
+  for (const kw of fallback) {
+    if (keywords.length >= 10) break;
+    if (!keywords.includes(kw)) keywords.push(kw);
+  }
 
   container.innerHTML = "";
   keywords.forEach((keyword) => {
@@ -233,6 +307,7 @@ function bindHomeSearch() {
       return;
     }
     const query = input.value.trim();
+    if (query) bumpSearch(query);
     location.href = query ? `search.html?q=${encodeURIComponent(query)}` : "search.html";
   });
 
@@ -327,6 +402,7 @@ function renderSearchPage() {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       query = input.value.trim();
+      if (query) bumpSearch(query);
       update();
     });
     input.addEventListener("input", debounce(() => {
@@ -506,6 +582,152 @@ function relatedChipHtml(name) {
       ${escapeHtml(name)}
     </a>
   `;
+}
+
+/* ---------- 投稿板 ---------- */
+
+const POST_COOLDOWN_MS = 30 * 1000; // 連投制限（30秒）
+const POST_MIN_FILL_MS = 3 * 1000;  // フォーム表示から送信までの最短時間（bot対策）
+const POST_TYPE_LABEL = { typo: "誤字・誤釈の指摘", request: "用語の追加依頼" };
+
+function renderBoard() {
+  bindBoardForm();
+  loadBoardPosts();
+}
+
+function bindBoardForm() {
+  const form = $("#postForm");
+  if (!form) return;
+
+  const status = $("#postStatus");
+  const body = $("#postBody");
+  const counter = $("#postCounter");
+  const mountedAt = Date.now();
+
+  if (body && counter) {
+    const updateCount = () => {
+      counter.textContent = `${body.value.length} / 1000`;
+    };
+    body.addEventListener("input", updateCount);
+    updateCount();
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    // honeypot（人間には見えない項目。埋まっていれば bot とみなし黙って終了）
+    if (form.elements.website && form.elements.website.value) {
+      setPostStatus(status, "ok", "投稿ありがとうございます。確認のうえ掲載します。");
+      form.reset();
+      return;
+    }
+    // 表示直後の即送信は bot とみなす
+    if (Date.now() - mountedAt < POST_MIN_FILL_MS) {
+      setPostStatus(status, "error", "送信が早すぎます。もう一度お試しください。");
+      return;
+    }
+    // 連投制限
+    const last = Number(localStorage.getItem("bw_last_post") || 0);
+    if (Date.now() - last < POST_COOLDOWN_MS) {
+      setPostStatus(status, "error", "短時間に投稿しすぎです。少し時間をおいてください。");
+      return;
+    }
+
+    const type = form.elements.type.value;
+    const term = $("#postTerm").value.trim();
+    const text = body.value.trim();
+
+    if (!POST_TYPE_LABEL[type]) {
+      setPostStatus(status, "error", "投稿の種類を選んでください。");
+      return;
+    }
+    if (!text) {
+      setPostStatus(status, "error", "内容を入力してください。");
+      return;
+    }
+    if (text.length > 1000) {
+      setPostStatus(status, "error", "内容は1000文字以内で入力してください。");
+      return;
+    }
+
+    const button = form.querySelector('button[type="submit"]');
+    if (button) button.disabled = true;
+    setPostStatus(status, "", "送信中…");
+
+    const ok = await submitPost({ type, term, body: text });
+
+    if (button) button.disabled = false;
+    if (ok) {
+      try { localStorage.setItem("bw_last_post", String(Date.now())); } catch { /* noop */ }
+      form.reset();
+      if (counter) counter.textContent = "0 / 1000";
+      setPostStatus(status, "ok", "投稿ありがとうございます。内容を確認・承認のうえ掲載します。");
+    } else {
+      setPostStatus(status, "error", "送信に失敗しました。時間を置いて再度お試しください。");
+    }
+  });
+}
+
+function setPostStatus(el, kind, message) {
+  if (!el) return;
+  el.textContent = message;
+  el.className = "post-status" + (kind ? ` post-status-${kind}` : "");
+  el.hidden = false;
+}
+
+async function loadBoardPosts() {
+  const list = $("#postList");
+  const empty = $("#postEmpty");
+  if (!list) return;
+
+  let posts = [];
+  try {
+    posts = await fetchApprovedPosts();
+  } catch {
+    list.innerHTML = "";
+    if (empty) {
+      empty.hidden = false;
+      empty.textContent = "投稿を読み込めませんでした。時間を置いて再読み込みしてください。";
+    }
+    return;
+  }
+
+  if (!posts.length) {
+    list.innerHTML = "";
+    if (empty) {
+      empty.hidden = false;
+      empty.textContent = "まだ公開されている投稿はありません。";
+    }
+    return;
+  }
+
+  if (empty) empty.hidden = true;
+  list.innerHTML = posts.map(postCardTemplate).join("");
+}
+
+function postCardTemplate(post) {
+  const label = POST_TYPE_LABEL[post.type] || "投稿";
+  const date = formatPostDate(post.created_at);
+  const term = post.term
+    ? `<p class="post-term">対象：${escapeHtml(post.term)}</p>`
+    : "";
+  return `
+    <article class="post-card">
+      <div class="post-head">
+        <span class="post-type post-type-${escapeHtml(post.type)}">${escapeHtml(label)}</span>
+        <time datetime="${escapeHtml(post.created_at)}">${date}</time>
+      </div>
+      ${term}
+      <p class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br>")}</p>
+    </article>
+  `;
+}
+
+function formatPostDate(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}`;
 }
 
 /* ---------- 共通テンプレート ---------- */
