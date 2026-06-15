@@ -830,7 +830,31 @@ mark {
 
 .related-chip svg { width: 13px; height: 13px; color: var(--yellow-500); }
 
-.detail-actions { margin-top: 22px; }
+.detail-actions {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.report-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--danger);
+  text-decoration: none;
+  border: 1px solid var(--yellow-100);
+  background: var(--yellow-50);
+  border-radius: 999px;
+  padding: 8px 16px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.report-link:hover { background: var(--yellow-100); border-color: var(--yellow-400); }
+.report-link svg { width: 15px; height: 15px; }
 
 /* ---------- 投稿板 ---------- */
 

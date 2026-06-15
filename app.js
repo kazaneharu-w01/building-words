@@ -540,6 +540,9 @@ function renderTermPage() {
   const crumb = $("#breadcrumbTerm");
   if (crumb) crumb.textContent = term.term;
 
+  const report = $("#reportLink");
+  if (report) report.href = `board.html?type=typo&term=${encodeURIComponent(term.term)}`;
+
   const related = Array.isArray(term.related) ? term.related.filter(Boolean) : [];
 
   const detail = $("#termDetail");
@@ -603,6 +606,21 @@ function bindBoardForm() {
   const body = $("#postBody");
   const counter = $("#postCounter");
   const mountedAt = Date.now();
+
+  // 用語ページの「誤りを指摘」からの遷移時、種類と対象用語を事前入力
+  const presetType = params.get("type");
+  const presetTerm = params.get("term");
+  if (presetType === "typo" || presetType === "request") {
+    const radio = form.querySelector(`input[name="type"][value="${presetType}"]`);
+    if (radio) radio.checked = true;
+  }
+  if (presetTerm) {
+    const termInput = $("#postTerm");
+    if (termInput) termInput.value = presetTerm;
+  }
+  if (presetType || presetTerm) {
+    requestAnimationFrame(() => body?.focus({ preventScroll: false }));
+  }
 
   if (body && counter) {
     const updateCount = () => {
