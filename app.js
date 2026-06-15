@@ -592,6 +592,7 @@ function relatedChipHtml(name) {
 const POST_COOLDOWN_MS = 30 * 1000; // 連投制限（30秒）
 const POST_MIN_FILL_MS = 3 * 1000;  // フォーム表示から送信までの最短時間（bot対策）
 const POST_TYPE_LABEL = { typo: "誤字・誤釈の指摘", request: "用語の追加依頼" };
+const POST_TERM_LABEL = { typo: "対象の用語", request: "追加依頼をしたい用語" };
 
 function renderBoard() {
   bindBoardForm();
@@ -621,6 +622,17 @@ function bindBoardForm() {
   if (presetType || presetTerm) {
     requestAnimationFrame(() => body?.focus({ preventScroll: false }));
   }
+
+  // 種類に応じて「対象の用語」ラベルを切り替え
+  const termLabel = $("#postTermLabel");
+  const updateTermLabel = () => {
+    const t = form.elements.type.value;
+    if (termLabel) termLabel.textContent = POST_TERM_LABEL[t] || "対象の用語";
+  };
+  form.querySelectorAll('input[name="type"]').forEach((radio) =>
+    radio.addEventListener("change", updateTermLabel)
+  );
+  updateTermLabel();
 
   if (body && counter) {
     const updateCount = () => {
