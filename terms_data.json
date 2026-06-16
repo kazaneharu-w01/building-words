@@ -3774,7 +3774,7 @@
     {
       "id": "demolition",
       "name": "解体工事",
-      "description": "内装解体、躯体解体、廃材処理、安全対策の用語。",
+      "description": "内装解体、躯体解体、廃材処理の用語。",
       "terms": [
         {
           "term": "解体",
