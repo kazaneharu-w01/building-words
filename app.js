@@ -910,9 +910,10 @@ function debounce(fn, wait) {
 
 /* ---------- 隠し機能: コナミコマンドでテトリス ---------- */
 
+// 物理キーコードで判定する（日本語IMEのオン/オフやキーボード配列に依存しない）
 const KONAMI_SEQUENCE = [
   "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown",
-  "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"
+  "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "KeyB", "KeyA"
 ];
 
 // 検索欄でコナミコマンド（↑↑↓↓←→←→BA）を入力するとテトリスが起動する
@@ -922,19 +923,20 @@ function bindKonami() {
   let pos = 0;
   input.addEventListener("keydown", (event) => {
     if (document.getElementById("tetrisOverlay")) return; // 起動中は無視
-    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-    if (key === KONAMI_SEQUENCE[pos]) {
-      // 文字キー(b/a)が検索ワードとして残らないよう入力を抑止する
-      if (key.length === 1) event.preventDefault();
+    const code = event.code;
+    if (code === KONAMI_SEQUENCE[pos]) {
+      // 文字キー(B/A)が検索ワードとして残らないよう入力を抑止する
+      if (code === "KeyB" || code === "KeyA") event.preventDefault();
       pos += 1;
       if (pos === KONAMI_SEQUENCE.length) {
         pos = 0;
         event.preventDefault();
-        input.value = ""; // 念のためクリア
+        input.blur();     // IMEの変換途中の文字を確定/解除してから
+        input.value = ""; // 検索欄をクリア
         launchTetris(input);
       }
     } else {
-      pos = key === KONAMI_SEQUENCE[0] ? 1 : 0;
+      pos = code === KONAMI_SEQUENCE[0] ? 1 : 0;
     }
   });
 }
