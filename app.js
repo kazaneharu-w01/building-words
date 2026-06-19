@@ -121,10 +121,15 @@ async function fetchTopKeywords(limit = 10) {
 
 // 承認済みの投稿を取得
 async function fetchApprovedPosts(limit = 100) {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/submissions?select=type,term,body,created_at&status=eq.approved&order=created_at.desc&limit=${limit}`,
+  const base = `${SUPABASE_URL}/rest/v1/submissions?status=eq.approved&order=created_at.desc&limit=${limit}`;
+  // admin_comment 列を含めて取得。列が未作成の環境では select が失敗するため、その場合は列なしで再取得する。
+  let res = await fetch(
+    `${base}&select=type,term,body,created_at,admin_comment`,
     { headers: sbHeaders() }
   );
+  if (res.status === 400) {
+    res = await fetch(`${base}&select=type,term,body,created_at`, { headers: sbHeaders() });
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -741,6 +746,13 @@ function postCardTemplate(post) {
   const term = post.term
     ? `<p class="post-term">対象：${escapeHtml(post.term)}</p>`
     : "";
+  const comment = (post.admin_comment || "").trim()
+    ? `
+      <div class="post-comment">
+        <p class="post-comment-head">${sectionIconSvg("related")}管理者からの対応コメント</p>
+        <p class="post-comment-body">${escapeHtml(post.admin_comment).replace(/\n/g, "<br>")}</p>
+      </div>`
+    : "";
   return `
     <article class="post-card">
       <div class="post-head">
@@ -749,6 +761,7 @@ function postCardTemplate(post) {
       </div>
       ${term}
       <p class="post-body">${escapeHtml(post.body || "").replace(/\n/g, "<br>")}</p>
+      ${comment}
     </article>
   `;
 }

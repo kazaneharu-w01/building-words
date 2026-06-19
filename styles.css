@@ -1019,6 +1019,26 @@ mark {
 .post-term { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--navy-800); }
 .post-body { margin: 0; font-size: 14.5px; line-height: 1.75; color: var(--ink); white-space: pre-line; }
 
+.post-comment {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-s);
+  background: var(--navy-50);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--navy-700);
+}
+.post-comment-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--navy-700);
+}
+.post-comment-head svg { width: 16px; height: 16px; flex: none; }
+.post-comment-body { margin: 0; font-size: 14px; line-height: 1.7; color: var(--ink); white-space: pre-line; }
+
 /* ---------- Footer ---------- */
 
 .footer {
