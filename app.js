@@ -1121,7 +1121,7 @@ function launchTetris(triggerEl) {
     if (cleared) {
       lines += cleared;
       score += TETRIS_LINE_SCORE[cleared] || cleared * 300;
-      dropInterval = Math.max(120, 800 - Math.floor(lines / 10) * 70);
+      dropInterval = Math.max(120, 800 - Math.floor(lines / 10) * 40);
       updateStats();
     }
   }
