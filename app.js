@@ -148,6 +148,7 @@ async function submitPost({ type, term, body }) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindNavToggle();
+  bindKonami();
 
   try {
     const response = await fetch("terms_data.json", { cache: "no-cache" });
@@ -905,4 +906,399 @@ function debounce(fn, wait) {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), wait);
   };
+}
+
+/* ---------- 隠し機能: コナミコマンドでテトリス ---------- */
+
+const KONAMI_SEQUENCE = [
+  "ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown",
+  "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"
+];
+
+// 検索欄でコナミコマンド（↑↑↓↓←→←→BA）を入力するとテトリスが起動する
+function bindKonami() {
+  const input = $("#searchInput");
+  if (!input) return;
+  let pos = 0;
+  input.addEventListener("keydown", (event) => {
+    if (document.getElementById("tetrisOverlay")) return; // 起動中は無視
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    if (key === KONAMI_SEQUENCE[pos]) {
+      pos += 1;
+      if (pos === KONAMI_SEQUENCE.length) {
+        pos = 0;
+        event.preventDefault();
+        launchTetris(input);
+      }
+    } else {
+      pos = key === KONAMI_SEQUENCE[0] ? 1 : 0;
+    }
+  });
+}
+
+const TETRIS_COLS = 10;
+const TETRIS_ROWS = 20;
+const TETRIS_CELL = 24;
+
+const TETRIS_SHAPES = {
+  I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
+  J: [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
+  L: [[0, 0, 1], [1, 1, 1], [0, 0, 0]],
+  O: [[1, 1], [1, 1]],
+  S: [[0, 1, 1], [1, 1, 0], [0, 0, 0]],
+  T: [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+  Z: [[1, 1, 0], [0, 1, 1], [0, 0, 0]]
+};
+const TETRIS_COLORS = {
+  I: "#38bdf8", J: "#3b82f6", L: "#f59e0b",
+  O: "#facc15", S: "#22c55e", T: "#a855f7", Z: "#ef4444"
+};
+const TETRIS_TYPES = Object.keys(TETRIS_SHAPES);
+const TETRIS_LINE_SCORE = [0, 100, 300, 500, 800];
+
+function launchTetris(triggerEl) {
+  if (document.getElementById("tetrisOverlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "tetrisOverlay";
+  overlay.className = "tetris-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", "テトリス（隠し機能）");
+  overlay.innerHTML = `
+    <div class="tetris-modal">
+      <div class="tetris-bar">
+        <strong class="tetris-title">TETRIS</strong>
+        <span class="tetris-egg">↑↑↓↓←→←→BA</span>
+        <button type="button" class="tetris-close" aria-label="閉じる">×</button>
+      </div>
+      <div class="tetris-stage">
+        <canvas class="tetris-board" width="${TETRIS_COLS * TETRIS_CELL}" height="${TETRIS_ROWS * TETRIS_CELL}"></canvas>
+        <div class="tetris-side">
+          <div class="tetris-panel">
+            <span class="tetris-label">NEXT</span>
+            <canvas class="tetris-next" width="96" height="96"></canvas>
+          </div>
+          <div class="tetris-panel">
+            <span class="tetris-label">SCORE</span>
+            <span class="tetris-num" data-score>0</span>
+          </div>
+          <div class="tetris-panel">
+            <span class="tetris-label">LINES</span>
+            <span class="tetris-num" data-lines>0</span>
+          </div>
+          <ul class="tetris-help">
+            <li><b>&larr; &rarr;</b> 移動</li>
+            <li><b>&uarr;</b> 回転</li>
+            <li><b>&darr;</b> 落下</li>
+            <li><b>Space</b> 一気に落下</li>
+            <li><b>P</b> 一時停止</li>
+            <li><b>Esc</b> 終了</li>
+          </ul>
+        </div>
+      </div>
+      <p class="tetris-msg" data-msg hidden></p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const boardCanvas = overlay.querySelector(".tetris-board");
+  const nextCanvas = overlay.querySelector(".tetris-next");
+  const ctx = boardCanvas.getContext("2d");
+  const nctx = nextCanvas.getContext("2d");
+  const scoreEl = overlay.querySelector("[data-score]");
+  const linesEl = overlay.querySelector("[data-lines]");
+  const msgEl = overlay.querySelector("[data-msg]");
+
+  const board = Array.from({ length: TETRIS_ROWS }, () => Array(TETRIS_COLS).fill(null));
+  let current = null;
+  let nextType = randomType();
+  let score = 0;
+  let lines = 0;
+  let dropInterval = 800;
+  let acc = 0;
+  let last = 0;
+  let paused = false;
+  let over = false;
+  let rafId = null;
+
+  function randomType() {
+    return TETRIS_TYPES[Math.floor(Math.random() * TETRIS_TYPES.length)];
+  }
+
+  function makePiece(type) {
+    const matrix = TETRIS_SHAPES[type].map((row) => row.slice());
+    return { type, matrix, x: Math.floor((TETRIS_COLS - matrix[0].length) / 2), y: 0 };
+  }
+
+  function rotate(matrix) {
+    const n = matrix.length;
+    const res = matrix.map((row) => row.slice());
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        res[x][n - 1 - y] = matrix[y][x];
+      }
+    }
+    return res;
+  }
+
+  function collides(matrix, offX, offY) {
+    for (let y = 0; y < matrix.length; y++) {
+      for (let x = 0; x < matrix[y].length; x++) {
+        if (!matrix[y][x]) continue;
+        const nx = offX + x;
+        const ny = offY + y;
+        if (nx < 0 || nx >= TETRIS_COLS || ny >= TETRIS_ROWS) return true;
+        if (ny >= 0 && board[ny][nx]) return true;
+      }
+    }
+    return false;
+  }
+
+  function merge() {
+    current.matrix.forEach((row, y) => {
+      row.forEach((v, x) => {
+        if (!v) return;
+        const ny = current.y + y;
+        const nx = current.x + x;
+        if (ny >= 0) board[ny][nx] = current.type;
+      });
+    });
+  }
+
+  function clearLines() {
+    let cleared = 0;
+    for (let y = TETRIS_ROWS - 1; y >= 0; y--) {
+      if (board[y].every((c) => c)) {
+        board.splice(y, 1);
+        board.unshift(Array(TETRIS_COLS).fill(null));
+        cleared += 1;
+        y += 1;
+      }
+    }
+    if (cleared) {
+      lines += cleared;
+      score += TETRIS_LINE_SCORE[cleared] || cleared * 300;
+      dropInterval = Math.max(120, 800 - Math.floor(lines / 10) * 70);
+      updateStats();
+    }
+  }
+
+  function updateStats() {
+    scoreEl.textContent = String(score);
+    linesEl.textContent = String(lines);
+  }
+
+  function spawn() {
+    current = makePiece(nextType);
+    nextType = randomType();
+    drawNext();
+    if (collides(current.matrix, current.x, current.y)) gameOver();
+  }
+
+  function lockAndNext() {
+    merge();
+    clearLines();
+    spawn();
+  }
+
+  function move(dir) {
+    if (!current || paused || over) return;
+    if (!collides(current.matrix, current.x + dir, current.y)) {
+      current.x += dir;
+      draw();
+    }
+  }
+
+  function softDrop() {
+    if (!current || paused || over) return;
+    if (!collides(current.matrix, current.x, current.y + 1)) {
+      current.y += 1;
+      score += 1;
+      updateStats();
+    } else {
+      lockAndNext();
+    }
+    draw();
+  }
+
+  function hardDrop() {
+    if (!current || paused || over) return;
+    let dist = 0;
+    while (!collides(current.matrix, current.x, current.y + 1)) {
+      current.y += 1;
+      dist += 1;
+    }
+    score += dist * 2;
+    updateStats();
+    lockAndNext();
+    draw();
+  }
+
+  function rotateCurrent() {
+    if (!current || paused || over) return;
+    const rotated = rotate(current.matrix);
+    for (const kick of [0, -1, 1, -2, 2]) {
+      if (!collides(rotated, current.x + kick, current.y)) {
+        current.matrix = rotated;
+        current.x += kick;
+        draw();
+        return;
+      }
+    }
+  }
+
+  function drawCell(c, x, y, size, color) {
+    c.fillStyle = color;
+    c.fillRect(x * size, y * size, size, size);
+    c.strokeStyle = "rgba(0,0,0,0.28)";
+    c.lineWidth = 2;
+    c.strokeRect(x * size + 1, y * size + 1, size - 2, size - 2);
+    c.fillStyle = "rgba(255,255,255,0.18)";
+    c.fillRect(x * size + 3, y * size + 3, size - 6, 4);
+  }
+
+  function draw() {
+    ctx.fillStyle = "#0b1626";
+    ctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.lineWidth = 1;
+    for (let x = 1; x < TETRIS_COLS; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * TETRIS_CELL, 0);
+      ctx.lineTo(x * TETRIS_CELL, boardCanvas.height);
+      ctx.stroke();
+    }
+    for (let y = 1; y < TETRIS_ROWS; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * TETRIS_CELL);
+      ctx.lineTo(boardCanvas.width, y * TETRIS_CELL);
+      ctx.stroke();
+    }
+    for (let y = 0; y < TETRIS_ROWS; y++) {
+      for (let x = 0; x < TETRIS_COLS; x++) {
+        if (board[y][x]) drawCell(ctx, x, y, TETRIS_CELL, TETRIS_COLORS[board[y][x]]);
+      }
+    }
+    if (current) {
+      current.matrix.forEach((row, y) => {
+        row.forEach((v, x) => {
+          if (v && current.y + y >= 0) {
+            drawCell(ctx, current.x + x, current.y + y, TETRIS_CELL, TETRIS_COLORS[current.type]);
+          }
+        });
+      });
+    }
+  }
+
+  function drawNext() {
+    nctx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+    const m = TETRIS_SHAPES[nextType];
+    const size = 20;
+    const offX = (nextCanvas.width - m[0].length * size) / 2;
+    const offY = (nextCanvas.height - m.length * size) / 2;
+    m.forEach((row, y) => {
+      row.forEach((v, x) => {
+        if (!v) return;
+        nctx.fillStyle = TETRIS_COLORS[nextType];
+        nctx.fillRect(offX + x * size, offY + y * size, size, size);
+        nctx.strokeStyle = "rgba(0,0,0,0.28)";
+        nctx.lineWidth = 2;
+        nctx.strokeRect(offX + x * size + 1, offY + y * size + 1, size - 2, size - 2);
+      });
+    });
+  }
+
+  function showMsg(html) {
+    msgEl.innerHTML = html;
+    msgEl.hidden = false;
+  }
+
+  function gameOver() {
+    over = true;
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    draw();
+    showMsg("GAME OVER<small>Enter / クリックで もう一度</small>");
+  }
+
+  function togglePause() {
+    if (over) return;
+    paused = !paused;
+    if (paused) {
+      showMsg("PAUSE<small>P で再開</small>");
+    } else {
+      msgEl.hidden = true;
+      last = performance.now();
+      rafId = requestAnimationFrame(loop);
+    }
+  }
+
+  function restart() {
+    board.forEach((row) => row.fill(null));
+    score = 0;
+    lines = 0;
+    dropInterval = 800;
+    acc = 0;
+    over = false;
+    paused = false;
+    msgEl.hidden = true;
+    updateStats();
+    nextType = randomType();
+    spawn();
+    draw();
+    last = performance.now();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function loop(ts) {
+    if (over || paused) return;
+    acc += ts - last;
+    last = ts;
+    while (acc >= dropInterval) {
+      acc -= dropInterval;
+      if (!collides(current.matrix, current.x, current.y + 1)) {
+        current.y += 1;
+      } else {
+        lockAndNext();
+        if (over) return;
+      }
+    }
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function onKey(event) {
+    switch (event.key) {
+      case "ArrowLeft": event.preventDefault(); move(-1); break;
+      case "ArrowRight": event.preventDefault(); move(1); break;
+      case "ArrowDown": event.preventDefault(); softDrop(); break;
+      case "ArrowUp": event.preventDefault(); rotateCurrent(); break;
+      case " ": event.preventDefault(); hardDrop(); break;
+      case "p": case "P": event.preventDefault(); togglePause(); break;
+      case "Enter": if (over) { event.preventDefault(); restart(); } break;
+      case "Escape": event.preventDefault(); closeGame(); break;
+      default: break;
+    }
+  }
+
+  function closeGame() {
+    if (rafId) cancelAnimationFrame(rafId);
+    document.removeEventListener("keydown", onKey, true);
+    overlay.remove();
+    if (triggerEl && typeof triggerEl.focus === "function") triggerEl.focus();
+  }
+
+  overlay.querySelector(".tetris-close").addEventListener("click", closeGame);
+  overlay.addEventListener("mousedown", (event) => {
+    if (event.target === overlay) closeGame();
+  });
+  msgEl.addEventListener("click", () => { if (over) restart(); });
+
+  document.addEventListener("keydown", onKey, true);
+  updateStats();
+  spawn();
+  draw();
+  last = performance.now();
+  rafId = requestAnimationFrame(loop);
 }

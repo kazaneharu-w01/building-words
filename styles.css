@@ -1039,6 +1039,126 @@ mark {
 .post-comment-head svg { width: 16px; height: 16px; flex: none; }
 .post-comment-body { margin: 0; font-size: 14px; line-height: 1.7; color: var(--ink); white-space: pre-line; }
 
+/* ---------- 隠し機能: テトリス ---------- */
+
+.tetris-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(7, 14, 25, 0.82);
+  backdrop-filter: blur(3px);
+}
+
+.tetris-modal {
+  position: relative;
+  background: #0e1b2c;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  padding: 16px;
+  color: #fff;
+  max-width: 100%;
+}
+
+.tetris-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.tetris-title { font-size: 20px; letter-spacing: 3px; font-weight: 900; }
+.tetris-egg { font-size: 11px; color: #ffd23f; opacity: 0.85; letter-spacing: 1px; }
+.tetris-close {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tetris-close:hover { background: rgba(255, 255, 255, 0.1); }
+
+.tetris-stage { display: flex; gap: 16px; align-items: flex-start; }
+.tetris-board {
+  background: #0b1626;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  touch-action: none;
+  max-width: 100%;
+  height: auto;
+}
+.tetris-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 112px;
+}
+.tetris-panel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tetris-label { font-size: 10px; letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.55); }
+.tetris-num { font-size: 22px; font-weight: 800; }
+.tetris-next { display: block; }
+.tetris-help {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.95;
+  color: rgba(255, 255, 255, 0.72);
+}
+.tetris-help b { color: #fff; font-weight: 700; }
+
+.tetris-msg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 18px 30px;
+  border-radius: 12px;
+  background: rgba(11, 22, 38, 0.94);
+  border: 1px solid #ffd23f;
+  color: #fff;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+.tetris-msg small {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 480px) {
+  .tetris-modal { padding: 12px; }
+  .tetris-stage { gap: 10px; }
+  .tetris-side { min-width: 92px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tetris-overlay { backdrop-filter: none; }
+}
+
 /* ---------- Footer ---------- */
 
 .footer {
