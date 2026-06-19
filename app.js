@@ -924,10 +924,13 @@ function bindKonami() {
     if (document.getElementById("tetrisOverlay")) return; // 起動中は無視
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
     if (key === KONAMI_SEQUENCE[pos]) {
+      // 文字キー(b/a)が検索ワードとして残らないよう入力を抑止する
+      if (key.length === 1) event.preventDefault();
       pos += 1;
       if (pos === KONAMI_SEQUENCE.length) {
         pos = 0;
         event.preventDefault();
+        input.value = ""; // 念のためクリア
         launchTetris(input);
       }
     } else {
