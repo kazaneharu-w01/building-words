@@ -1112,7 +1112,7 @@ mark {
 }
 .tetris-label { font-size: 10px; letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.55); }
 .tetris-num { font-size: 22px; font-weight: 800; }
-.tetris-next { display: block; }
+.tetris-next, .tetris-hold { display: block; }
 .tetris-help {
   list-style: none;
   margin: 4px 0 0;
@@ -1148,6 +1148,7 @@ mark {
 }
 .tc-btn:active { background: rgba(255, 210, 63, 0.28); border-color: #ffd23f; }
 .tc-rotate { background: rgba(255, 210, 63, 0.16); }
+.tc-hold { background: rgba(168, 85, 247, 0.18); font-size: 16px; }
 .tc-drop { background: rgba(56, 189, 248, 0.16); font-size: 16px; }
 
 /* タッチ操作ボタンはマウス環境では隠す（キーボード操作が前提） */

@@ -996,6 +996,10 @@ function launchTetris(triggerEl) {
         <canvas class="tetris-board" width="${TETRIS_COLS * TETRIS_CELL}" height="${TETRIS_ROWS * TETRIS_CELL}"></canvas>
         <div class="tetris-side">
           <div class="tetris-panel">
+            <span class="tetris-label">HOLD</span>
+            <canvas class="tetris-hold" width="96" height="96"></canvas>
+          </div>
+          <div class="tetris-panel">
             <span class="tetris-label">NEXT</span>
             <canvas class="tetris-next" width="96" height="96"></canvas>
           </div>
@@ -1012,13 +1016,17 @@ function launchTetris(triggerEl) {
             <li><b>&uarr;</b> 回転</li>
             <li><b>&darr;</b> 落下</li>
             <li><b>Space</b> 一気に落下</li>
+            <li><b>C</b> ホールド</li>
             <li><b>P</b> 一時停止</li>
             <li><b>Esc</b> 終了</li>
           </ul>
         </div>
       </div>
       <div class="tetris-controls" aria-label="操作ボタン">
-        <button type="button" class="tc-btn tc-rotate" data-act="rotate">⟳ 回転</button>
+        <div class="tc-row">
+          <button type="button" class="tc-btn tc-hold" data-act="hold">⇩ ホールド</button>
+          <button type="button" class="tc-btn tc-rotate" data-act="rotate">⟳ 回転</button>
+        </div>
         <div class="tc-row">
           <button type="button" class="tc-btn" data-act="left" aria-label="左へ移動">◀</button>
           <button type="button" class="tc-btn" data-act="down" aria-label="下へ">▼</button>
@@ -1033,8 +1041,10 @@ function launchTetris(triggerEl) {
 
   const boardCanvas = overlay.querySelector(".tetris-board");
   const nextCanvas = overlay.querySelector(".tetris-next");
+  const holdCanvas = overlay.querySelector(".tetris-hold");
   const ctx = boardCanvas.getContext("2d");
   const nctx = nextCanvas.getContext("2d");
+  const hctx = holdCanvas.getContext("2d");
   const scoreEl = overlay.querySelector("[data-score]");
   const linesEl = overlay.querySelector("[data-lines]");
   const msgEl = overlay.querySelector("[data-msg]");
@@ -1051,6 +1061,8 @@ function launchTetris(triggerEl) {
   let over = false;
   let rafId = null;
   let repeatTimer = null;
+  let holdType = null;   // ストックしているミノ
+  let canHold = true;    // 1ミノにつきホールドは1回まで
 
   function randomType() {
     return TETRIS_TYPES[Math.floor(Math.random() * TETRIS_TYPES.length)];
@@ -1129,7 +1141,30 @@ function launchTetris(triggerEl) {
   function lockAndNext() {
     merge();
     clearLines();
+    canHold = true; // ミノが固定されたらホールド解禁
     spawn();
+  }
+
+  // ホールド（1個ストック）。1ミノにつき1回まで
+  function hold() {
+    if (!current || paused || over || !canHold) return;
+    const curType = current.type;
+    if (holdType === null) {
+      holdType = curType;
+      spawn();
+    } else {
+      const swap = holdType;
+      holdType = curType;
+      current = makePiece(swap);
+      if (collides(current.matrix, current.x, current.y)) {
+        gameOver();
+        drawHold();
+        return;
+      }
+    }
+    canHold = false;
+    drawHold();
+    draw();
   }
 
   function move(dir) {
@@ -1211,6 +1246,17 @@ function launchTetris(triggerEl) {
       }
     }
     if (current) {
+      // 落下位置ガイド（ゴースト）
+      let ghostY = current.y;
+      while (!collides(current.matrix, current.x, ghostY + 1)) ghostY += 1;
+      if (ghostY > current.y) {
+        current.matrix.forEach((row, y) => {
+          row.forEach((v, x) => {
+            if (v && ghostY + y >= 0) drawGhostCell(current.x + x, ghostY + y, TETRIS_COLORS[current.type]);
+          });
+        });
+      }
+      // 現在のミノ
       current.matrix.forEach((row, y) => {
         row.forEach((v, x) => {
           if (v && current.y + y >= 0) {
@@ -1221,22 +1267,43 @@ function launchTetris(triggerEl) {
     }
   }
 
-  function drawNext() {
-    nctx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-    const m = TETRIS_SHAPES[nextType];
+  function drawGhostCell(x, y, color) {
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.fillRect(x * TETRIS_CELL, y * TETRIS_CELL, TETRIS_CELL, TETRIS_CELL);
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x * TETRIS_CELL + 1.5, y * TETRIS_CELL + 1.5, TETRIS_CELL - 3, TETRIS_CELL - 3);
+    ctx.restore();
+  }
+
+  // NEXT / HOLD のプレビュー描画（dim=true で薄く表示）
+  function drawPreview(context, canvas, type, dim) {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (!type) return;
+    const m = TETRIS_SHAPES[type];
     const size = 20;
-    const offX = (nextCanvas.width - m[0].length * size) / 2;
-    const offY = (nextCanvas.height - m.length * size) / 2;
+    const offX = (canvas.width - m[0].length * size) / 2;
+    const offY = (canvas.height - m.length * size) / 2;
     m.forEach((row, y) => {
       row.forEach((v, x) => {
         if (!v) return;
-        nctx.fillStyle = TETRIS_COLORS[nextType];
-        nctx.fillRect(offX + x * size, offY + y * size, size, size);
-        nctx.strokeStyle = "rgba(0,0,0,0.28)";
-        nctx.lineWidth = 2;
-        nctx.strokeRect(offX + x * size + 1, offY + y * size + 1, size - 2, size - 2);
+        context.fillStyle = dim ? "rgba(255,255,255,0.22)" : TETRIS_COLORS[type];
+        context.fillRect(offX + x * size, offY + y * size, size, size);
+        context.strokeStyle = "rgba(0,0,0,0.28)";
+        context.lineWidth = 2;
+        context.strokeRect(offX + x * size + 1, offY + y * size + 1, size - 2, size - 2);
       });
     });
+  }
+
+  function drawNext() {
+    drawPreview(nctx, nextCanvas, nextType, false);
+  }
+
+  function drawHold() {
+    drawPreview(hctx, holdCanvas, holdType, !canHold);
   }
 
   function showMsg(html) {
@@ -1272,8 +1339,11 @@ function launchTetris(triggerEl) {
     acc = 0;
     over = false;
     paused = false;
+    holdType = null;
+    canHold = true;
     msgEl.hidden = true;
     updateStats();
+    drawHold();
     nextType = randomType();
     spawn();
     draw();
@@ -1305,6 +1375,7 @@ function launchTetris(triggerEl) {
       case "ArrowDown": event.preventDefault(); softDrop(); break;
       case "ArrowUp": event.preventDefault(); rotateCurrent(); break;
       case " ": event.preventDefault(); hardDrop(); break;
+      case "c": case "C": case "Shift": event.preventDefault(); hold(); break;
       case "p": case "P": event.preventDefault(); togglePause(); break;
       case "Enter": if (over) { event.preventDefault(); restart(); } break;
       case "Escape": event.preventDefault(); closeGame(); break;
@@ -1339,7 +1410,8 @@ function launchTetris(triggerEl) {
     right: () => move(1),
     down: softDrop,
     rotate: rotateCurrent,
-    drop: hardDrop
+    drop: hardDrop,
+    hold: hold
   };
   overlay.querySelectorAll(".tetris-controls [data-act]").forEach((btn) => {
     const act = btn.dataset.act;
@@ -1347,7 +1419,7 @@ function launchTetris(triggerEl) {
     if (!fn) return;
     btn.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      if (over) { if (act === "rotate" || act === "drop") return; }
+      if (over) return;
       fn();
       if (act === "left" || act === "right" || act === "down") {
         stopRepeat();
@@ -1361,6 +1433,7 @@ function launchTetris(triggerEl) {
 
   document.addEventListener("keydown", onKey, true);
   updateStats();
+  drawHold();
   spawn();
   draw();
   last = performance.now();
