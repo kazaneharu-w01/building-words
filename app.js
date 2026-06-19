@@ -916,10 +916,15 @@ const KONAMI_SEQUENCE = [
   "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "KeyB", "KeyA"
 ];
 
+// スマホ向け: 検索欄に文字列として ↑↑↓↓←→←→ba（大文字可）が入力されたら起動
+const KONAMI_TEXT = "↑↑↓↓←→←→ba";
+
 // 検索欄でコナミコマンド（↑↑↓↓←→←→BA）を入力するとテトリスが起動する
 function bindKonami() {
   const input = $("#searchInput");
   if (!input) return;
+
+  // PC向け: キー操作でのコナミコマンド検出
   let pos = 0;
   input.addEventListener("keydown", (event) => {
     if (document.getElementById("tetrisOverlay")) return; // 起動中は無視
@@ -937,6 +942,16 @@ function bindKonami() {
       }
     } else {
       pos = code === KONAMI_SEQUENCE[0] ? 1 : 0;
+    }
+  });
+
+  // スマホ向け: 検索欄の文字列が ↑↑↓↓←→←→ba を含んだら起動
+  input.addEventListener("input", () => {
+    if (document.getElementById("tetrisOverlay")) return;
+    if (input.value.toLowerCase().includes(KONAMI_TEXT)) {
+      input.blur();
+      input.value = "";
+      launchTetris(input);
     }
   });
 }
