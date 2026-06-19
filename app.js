@@ -1017,6 +1017,15 @@ function launchTetris(triggerEl) {
           </ul>
         </div>
       </div>
+      <div class="tetris-controls" aria-label="操作ボタン">
+        <button type="button" class="tc-btn tc-rotate" data-act="rotate">⟳ 回転</button>
+        <div class="tc-row">
+          <button type="button" class="tc-btn" data-act="left" aria-label="左へ移動">◀</button>
+          <button type="button" class="tc-btn" data-act="down" aria-label="下へ">▼</button>
+          <button type="button" class="tc-btn" data-act="right" aria-label="右へ移動">▶</button>
+        </div>
+        <button type="button" class="tc-btn tc-drop" data-act="drop">⤓ 一気に落下</button>
+      </div>
       <p class="tetris-msg" data-msg hidden></p>
     </div>
   `;
@@ -1041,6 +1050,7 @@ function launchTetris(triggerEl) {
   let paused = false;
   let over = false;
   let rafId = null;
+  let repeatTimer = null;
 
   function randomType() {
     return TETRIS_TYPES[Math.floor(Math.random() * TETRIS_TYPES.length)];
@@ -1302,7 +1312,15 @@ function launchTetris(triggerEl) {
     }
   }
 
+  function stopRepeat() {
+    if (repeatTimer) {
+      clearInterval(repeatTimer);
+      repeatTimer = null;
+    }
+  }
+
   function closeGame() {
+    stopRepeat();
     if (rafId) cancelAnimationFrame(rafId);
     document.removeEventListener("keydown", onKey, true);
     overlay.remove();
@@ -1314,6 +1332,32 @@ function launchTetris(triggerEl) {
     if (event.target === overlay) closeGame();
   });
   msgEl.addEventListener("click", () => { if (over) restart(); });
+
+  // タッチ操作ボタン（スマホ向け）。左右・下は長押しで連続入力
+  const TOUCH_ACTIONS = {
+    left: () => move(-1),
+    right: () => move(1),
+    down: softDrop,
+    rotate: rotateCurrent,
+    drop: hardDrop
+  };
+  overlay.querySelectorAll(".tetris-controls [data-act]").forEach((btn) => {
+    const act = btn.dataset.act;
+    const fn = TOUCH_ACTIONS[act];
+    if (!fn) return;
+    btn.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      if (over) { if (act === "rotate" || act === "drop") return; }
+      fn();
+      if (act === "left" || act === "right" || act === "down") {
+        stopRepeat();
+        repeatTimer = setInterval(fn, 110);
+      }
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
+      btn.addEventListener(ev, stopRepeat)
+    );
+  });
 
   document.addEventListener("keydown", onKey, true);
   updateStats();

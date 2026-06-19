@@ -1123,6 +1123,42 @@ mark {
 }
 .tetris-help b { color: #fff; font-weight: 700; }
 
+.tetris-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.tetris-controls .tc-row { display: flex; gap: 8px; }
+.tc-btn {
+  flex: 1;
+  min-height: 54px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tc-btn:active { background: rgba(255, 210, 63, 0.28); border-color: #ffd23f; }
+.tc-rotate { background: rgba(255, 210, 63, 0.16); }
+.tc-drop { background: rgba(56, 189, 248, 0.16); font-size: 16px; }
+
+/* タッチ操作ボタンはマウス環境では隠す（キーボード操作が前提） */
+@media (hover: hover) and (pointer: fine) {
+  .tetris-controls { display: none; }
+}
+/* タッチ端末ではキーボード操作のヒントを隠す */
+@media (pointer: coarse) {
+  .tetris-help { display: none; }
+}
+
 .tetris-msg {
   position: absolute;
   left: 50%;
